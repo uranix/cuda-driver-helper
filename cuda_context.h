@@ -68,6 +68,14 @@ public:
         return mod;
     }
 
+    void memcpy_DtoH(void *dst, const void *src, size_t bytes) {
+        CUDA_CHECK(cuMemcpyDtoH(dst, (CUdeviceptr)src, bytes));
+    }
+
+    void memcpy_HtoD(void *dst, const void *src, size_t bytes) {
+        CUDA_CHECK(cuMemcpyHtoD((CUdeviceptr)dst, src, bytes));
+    }
+
     ~cuda_context() {
         /* No CUDA_CHECK's due to possible exceptions thrown */
         for (auto m : modules)

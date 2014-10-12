@@ -3,10 +3,10 @@
 
 #define LOOKUP_SYMBOL(name) GPU_ ## name = lookup(#name);
 
-struct my_cuda_context : cuda_context {
-
+class my_cuda_context : public cuda_context {
     CUfunction GPU_sum;
 
+public:
     my_cuda_context() {
         load_module("kernel.cubin");
         LOOKUP_SYMBOL(sum);
@@ -42,12 +42,12 @@ int main() {
             hb[i] = i;
         }
 
-        cuMemcpyHtoD((CUdeviceptr)a, ha, N * sizeof(float));
-        cuMemcpyHtoD((CUdeviceptr)b, hb, N * sizeof(float));
+        ctx.memcpy_HtoD(a, ha, N * sizeof(float));
+        ctx.memcpy_HtoD(b, hb, N * sizeof(float));
 
         ctx.sum(N, a, b, c);
 
-        cuMemcpyDtoH(hc, (CUdeviceptr)c, N * sizeof(float));
+        ctx.memcpy_DtoH(hc, c, N * sizeof(float));
 
         for (int i = 0; i < 10; i++)
             std::cout << ha[i] << " + " << hb[i] << " = " << hc[i] << std::endl;
