@@ -63,7 +63,8 @@ const char *cuErrorString(CUresult err) {
     return "<unknown result code>";
 }
 
-struct cuda_error : std::runtime_error {
+class cuda_error : public std::runtime_error {
+public:
     cuda_error(const std::string &msg, CUresult err) : std::runtime_error(msg + ". CUresult = " + cuErrorString(err)) { }
 };
 
