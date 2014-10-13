@@ -6,6 +6,11 @@
 
 #include <vector>
 
+struct dim3 {
+    unsigned int x, y, z;
+    dim3 (unsigned int x, unsigned int y = 1, unsigned int z = 1) : x(x), y(y), z(z) { }
+};
+
 class cuda_context {
     CUcontext ctx;
     CUdevice dev;
@@ -13,28 +18,7 @@ class cuda_context {
     std::vector<CUmodule> modules;
 
 protected:
-    struct dim3 {
-        unsigned int x, y, z;
-        dim3 (unsigned int x, unsigned int y = 1, unsigned int z = 1) : x(x), y(y), z(z) { }
-    };
-
-    struct param_holder {
-        void *_data[64]; /* Lives on stack, not heap */
-        param_holder(std::initializer_list<void *> init) {
-            if (init.size() > 64)
-                throw std::out_of_range("Number of parameters is too big for a kernel function");
-            std::copy(init.begin(), init.end(), _data);
-        }
-        void **data() {
-            return &_data[0];
-        }
-    };
-
-    void launch(CUfunction f, dim3 grid, dim3 block, param_holder params, unsigned int dynShmem = 0, CUstream stream = 0) {
-        CUDA_CHECK(cuLaunchKernel(f, grid.x, grid.y, grid.z, block.x, block.y, block.z, dynShmem, stream, params.data(), 0));
-    }
-
-    CUfunction lookup(const char *name, CUmodule hint = 0) {
+    CUfunction lookup(const char *name, CUmodule hint = 0) const {
         if (hint) {
             CUfunction f;
             CUresult res = cuModuleGetFunction(&f, hint, name);
@@ -83,5 +67,46 @@ public:
         cuCtxDestroy(ctx);
     }
 };
+
+class configured_call {
+    CUfunction f;
+    dim3 grid;
+    dim3 block;
+    unsigned int shmem;
+    CUstream stream;
+public:
+    configured_call(CUfunction f, dim3 grid, dim3 block, unsigned int shmem, CUstream stream)
+        : f(f), grid(grid), block(block), shmem(shmem), stream(stream)
+    { }
+
+    class param_holder {
+        void *_data[64]; /* Lives on stack, not heap */
+    public:
+        param_holder(std::initializer_list<void *> init) {
+            if (init.size() > 64)
+                throw std::out_of_range("Number of parameters is too big for a kernel function");
+            std::copy(init.begin(), init.end(), _data);
+        }
+        void **data() {
+            return _data;
+        }
+    };
+
+    void operator()(param_holder params) const {
+        CUDA_CHECK(cuLaunchKernel(f, grid.x, grid.y, grid.z, block.x, block.y, block.z, shmem, stream, params.data(), 0));
+    }
+};
+
+#ifndef OUTERCLASS
+#define OUTERCLASS(className, memberName) \
+    reinterpret_cast<const className*>(reinterpret_cast<const unsigned char*>(this) - offsetof(className, memberName))
+#endif
+
+#define DECLARE_KERNEL(name, classname, member) class __kernel_ ## name { mutable CUfunction __f; const char *__name; \
+    public: __kernel_ ## name() : __f(0), __name(#name) { } \
+    configured_call operator()(dim3 grid, dim3 block, unsigned int shmem = 0, CUstream stream = 0) const { \
+        if (!__f) { __f = OUTERCLASS(classname, member)->lookup(__name); } \
+        return configured_call(__f, grid, block, shmem, stream); \
+    } } member
 
 #endif

@@ -4,18 +4,24 @@
 #define LOOKUP_SYMBOL(name) GPU_ ## name = lookup(#name);
 
 class my_cuda_context : public cuda_context {
-    CUfunction GPU_sum;
+    DECLARE_KERNEL(sum, my_cuda_context, GPU_sum);
+    DECLARE_KERNEL(scal, my_cuda_context, GPU_scale);
 
 public:
     my_cuda_context() {
         load_module("kernel.cubin");
-        LOOKUP_SYMBOL(sum);
     }
 
     void sum(size_t n, const float *a, const float *b, float *c) {
         dim3 grid((n + 255) / 256);
         dim3 block(256);
-        launch(GPU_sum, grid, block, { &n, &a, &b, &c });
+        GPU_sum(grid, block)({ &n, &a, &b, &c });
+    }
+
+    void scale(size_t n, float *a, float scale) {
+        dim3 grid((n + 255) / 256);
+        dim3 block(256);
+        GPU_scale(grid, block)({ &n, &a, &scale });
     }
 };
 
@@ -46,14 +52,15 @@ int main() {
         ctx.memcpy_HtoD(b, hb, N * sizeof(float));
 
         ctx.sum(N, a, b, c);
+        ctx.scale(N, c, .5);
 
         ctx.memcpy_DtoH(hc, c, N * sizeof(float));
 
         for (int i = 0; i < 10; i++)
-            std::cout << ha[i] << " + " << hb[i] << " = " << hc[i] << std::endl;
+            std::cout << "(" << ha[i] << " + " << hb[i] << ") * 0.5 = " << hc[i] << std::endl;
         std::cout << "..." << std::endl;
         for (int i = N - 10; i < N; i++)
-            std::cout << ha[i] << " + " << hb[i] << " = " << hc[i] << std::endl;
+            std::cout << "(" << ha[i] << " + " << hb[i] << ") * 0.5 = " << hc[i] << std::endl;
 
         gpu.deallocate(a);
         gpu.deallocate(b);
