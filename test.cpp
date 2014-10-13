@@ -1,8 +1,6 @@
 #include "gpu_allocator.h"
 #include "cuda_context.h"
 
-#define LOOKUP_SYMBOL(name) GPU_ ## name = lookup(#name);
-
 class my_cuda_context : public cuda_context {
     DECLARE_KERNEL(sum, my_cuda_context, GPU_sum);
     DECLARE_KERNEL(scal, my_cuda_context, GPU_scale);
