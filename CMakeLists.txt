@@ -21,6 +21,7 @@ include_directories(cuda-helper/)
 target_link_libraries(run_test ${CUDA_CUDA_LIBRARY})
 
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_12")
+set(CUDA_HOST_COMPILER g++)
 CUDA_COMPILE_PTX(kernels kernels.cu)
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/kernels.ptx COMMAND ${CMAKE_COMMAND} -E copy ${kernels} ${CMAKE_BINARY_DIR}/kernels.ptx DEPENDS ${kernels})
 add_custom_target(ptx ALL DEPENDS ${CMAKE_BINARY_DIR}/kernels.ptx kernels.cu SOURCES kernels.cu)
