@@ -75,7 +75,7 @@ public:
 
         return reinterpret_cast<pointer>(p);
     }
-    void deallocate(pointer p, size_type /* unnamed */ = 0) const {
+    void deallocate(pointer p, size_type) const {
         CUdeviceptr pv = reinterpret_cast<CUdeviceptr>(p);
         CUDA_CHECK(cuMemFree(pv));
     }
