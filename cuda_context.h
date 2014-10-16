@@ -51,7 +51,7 @@ public:
         CUmodule mod;
         CUresult err = cuModuleLoad(&mod, file);
         if (err != CUDA_SUCCESS)
-            throw std::cuda_context(std::string("Loading module `") + file + "' failed", err);
+            throw cuda_error(std::string("Loading module `") + file + "' failed", err);
         modules.push_back(mod);
         return mod;
     }
