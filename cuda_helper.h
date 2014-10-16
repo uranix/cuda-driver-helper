@@ -4,6 +4,8 @@
 #include <cuda.h>
 #include <stdexcept>
 
+namespace cuda_helper {
+
 const char *cuErrorString(CUresult err) {
     /* Valid for CUDA 5.5 */
 #define CASE(x) case x: return #x
@@ -68,13 +70,15 @@ public:
     cuda_error(const std::string &msg, CUresult err) : std::runtime_error(msg + ". CUresult = " + cuErrorString(err)) { }
 };
 
-#define STRINGIZE_DETAIL(x) #x
-#define STRINGIZE(x) STRINGIZE_DETAIL(x)
+}
+
+#define CUDA_HELPER_STRINGIZE_DETAIL(x) #x
+#define CUDA_HELPER_STRINGIZE(x) CUDA_HELPER_STRINGIZE_DETAIL(x)
 
 #define CUDA_CHECK(x) do { \
     CUresult __err = (x); \
     if (__err != CUDA_SUCCESS) \
-        throw cuda_error(std::string("Call `") + #x + "' on line " + STRINGIZE(__LINE__) + " in file " + __FILE__ + " failed", __err); \
+        throw cuda_helper::cuda_error(std::string("Call `") + #x + "' on line " + CUDA_HELPER_STRINGIZE(__LINE__) + " in file " + __FILE__ + " failed", __err); \
 } while (false)
 
 #endif

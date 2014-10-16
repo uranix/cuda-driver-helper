@@ -8,6 +8,8 @@
 #include <cuda.h>
 #include "cuda_helper.h"
 
+namespace cuda_helper {
+
 template <typename T> class gpu_allocator {
     CUdevice device;
     void check_current_device(const char *msg = "CUDA device has changed since allocator construction") const {
@@ -98,5 +100,7 @@ public:
         throw std::logic_error("Cannot destroy an object from GPU memory on host");
     }
 };
+
+}
 
 #endif

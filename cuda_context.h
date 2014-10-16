@@ -6,6 +6,8 @@
 
 #include <vector>
 
+namespace cuda_helper {
+
 struct dim3 {
     unsigned int x, y, z;
     dim3 (unsigned int x, unsigned int y = 1, unsigned int z = 1) : x(x), y(y), z(z) { }
@@ -97,16 +99,18 @@ public:
     }
 };
 
-#ifndef OUTERCLASS
-#define OUTERCLASS(className, memberName) \
+}
+
+#ifndef CUDA_HELPER_OUTERCLASS
+#define CUDA_HELPER_OUTERCLASS(className, memberName) \
     reinterpret_cast<const className*>(reinterpret_cast<const unsigned char*>(this) - offsetof(className, memberName))
 #endif
 
 #define DECLARE_KERNEL(name, classname, member) class __kernel_ ## name { mutable CUfunction __f; const char *__name; \
     public: __kernel_ ## name() : __f(0), __name(#name) { } \
-    configured_call operator()(dim3 grid, dim3 block, unsigned int shmem = 0, CUstream stream = 0) const { \
-        if (!__f) { __f = OUTERCLASS(classname, member)->lookup(__name); } \
-        return configured_call(__f, grid, block, shmem, stream); \
+    cuda_helper::configured_call operator()(cuda_helper::dim3 grid, cuda_helper::dim3 block, unsigned int shmem = 0, CUstream stream = 0) const { \
+        if (!__f) { __f = CUDA_HELPER_OUTERCLASS(classname, member)->lookup(__name); } \
+        return cuda_helper::configured_call(__f, grid, block, shmem, stream); \
     } } member
 
 #endif
