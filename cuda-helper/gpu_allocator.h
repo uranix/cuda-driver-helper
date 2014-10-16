@@ -10,7 +10,7 @@
 
 namespace cuda_helper {
 
-template <typename T> class gpu_allocator {
+template <typename T> class allocator {
     CUdevice device;
     void check_current_device(const char *msg = "CUDA device has changed since allocator construction") const {
         CUdevice _device;
@@ -27,20 +27,20 @@ public:
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
 
-    gpu_allocator() {
+    allocator() {
         cuCtxGetDevice(&device);
     }
 
-    gpu_allocator(const gpu_allocator &other) : device(other.device) {
+    allocator(const allocator &other) : device(other.device) {
         check_current_device("Cannot copy-construct an allocator for different device");
     }
 
     template <typename U>
-    gpu_allocator(const gpu_allocator<U> &other) : device(other.device) {
+    allocator(const allocator<U> &other) : device(other.device) {
         check_current_device("Cannot copy-construct an allocator for different device");
     }
 
-    ~gpu_allocator() { }
+    ~allocator() { }
 
     pointer address(reference r) const { return &r; }
     const_pointer address(const_reference r) const { return &r; }
@@ -52,10 +52,10 @@ public:
         return total_mem / sizeof(T);
     }
     template <typename U> struct rebind {
-        typedef gpu_allocator<U> other;
+        typedef allocator<U> other;
     };
-    bool operator!=(const gpu_allocator &other) const { return !(*this == other); }
-    bool operator==(const gpu_allocator &other) const { return device == other.device; }
+    bool operator!=(const allocator &other) const { return !(*this == other); }
+    bool operator==(const allocator &other) const { return device == other.device; }
     T *allocate(const size_type n) const {
         if (n == 0)
 #if __cplusplus < 201103L
@@ -86,10 +86,10 @@ public:
 
 #if __cplusplus < 201103L
 private:
-    gpu_allocator &operator=(const gpu_allocator &);
+    allocator &operator=(const allocator &);
 public:
 #else
-    gpu_allocator &operator=(const gpu_allocator &) = delete;
+    allocator &operator=(const allocator &) = delete;
 #endif
 
     void construct(pointer, const reference) const {
