@@ -62,9 +62,9 @@ int main() {
         for (int i = N - 10; i < N; i++)
             std::cout << "(" << ha[i] << " + " << hb[i] << ") * 0.5 = " << hc[i] << std::endl;
 
-        gpu.deallocate(a);
-        gpu.deallocate(b);
-        gpu.deallocate(c);
+        gpu.deallocate(a, 0);
+        gpu.deallocate(b, 0);
+        gpu.deallocate(c, 0);
 
         cpu.deallocate(ha, 0);
         cpu.deallocate(hb, 0);
