@@ -4,7 +4,8 @@
 #include <cuda.h>
 #include "cuda_helper.h"
 
-#include <vector>
+#include <string>
+#include <map>
 
 namespace cuda_helper {
 
@@ -17,7 +18,7 @@ class cuda_context {
     CUcontext ctx;
     CUdevice dev;
 
-    std::vector<CUmodule> modules;
+    std::map<std::string, CUmodule> modules;
 
 protected:
     CUfunction lookup(const char *name, CUmodule hint = 0) const {
@@ -27,15 +28,15 @@ protected:
             if (res == CUDA_SUCCESS)
                 return f;
             if (res != CUDA_ERROR_NOT_FOUND)
-                CUDA_CHECK(res);
+                throw cuda_error(std::string("Loading function `") + name + "' from given module failed", res);
         }
         for (auto m : modules) {
             CUfunction f;
-            CUresult res = cuModuleGetFunction(&f, m, name);
+            CUresult res = cuModuleGetFunction(&f, m.second, name);
             if (res == CUDA_SUCCESS)
                 return f;
             if (res != CUDA_ERROR_NOT_FOUND)
-                CUDA_CHECK(res);
+                throw cuda_error(std::string("Loading function `") + name + "' from module `" + m.first + "' failed", res);
         }
         throw std::runtime_error(std::string("No module with function `") + name + "' was loaded");
     }
@@ -52,7 +53,7 @@ public:
         CUresult err = cuModuleLoad(&mod, file);
         if (err != CUDA_SUCCESS)
             throw cuda_error(std::string("Loading module `") + file + "' failed", err);
-        modules.push_back(mod);
+        modules.push_back(std::pair<std::string, CUmodule>(file, mod));
         return mod;
     }
 
@@ -65,7 +66,7 @@ public:
     }
 
     ~cuda_context() {
-        /* No CUDA_CHECK's due to possible exceptions thrown */
+        /* No CUDA_CHECK's due to possible exceptions being thrown */
         for (auto m : modules)
             cuModuleUnload(m);
         cuCtxDestroy(ctx);
