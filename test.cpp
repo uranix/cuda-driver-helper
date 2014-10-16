@@ -1,9 +1,9 @@
 #include "gpu_allocator.h"
 #include "cuda_context.h"
 
-namespace ch = cuda_helper;
+namespace gpu = cuda_helper;
 
-class my_cuda_context : public ch::cuda_context {
+class my_cuda_context : public gpu::cuda_context {
     DECLARE_KERNEL(sum, my_cuda_context, GPU_sum);
     DECLARE_KERNEL(scal, my_cuda_context, GPU_scale);
 
@@ -13,14 +13,14 @@ public:
     }
 
     void sum(size_t n, const float *a, const float *b, float *c) {
-        ch::dim3 grid((n + 255) / 256);
-        ch::dim3 block(256);
+        gpu::dim3 grid((n + 255) / 256);
+        gpu::dim3 block(256);
         GPU_sum(grid, block)({ &n, &a, &b, &c });
     }
 
     void scale(size_t n, float *a, float scale) {
-        ch::dim3 grid((n + 255) / 256);
-        ch::dim3 block(256);
+        gpu::dim3 grid((n + 255) / 256);
+        gpu::dim3 block(256);
         GPU_scale(grid, block)({ &n, &a, &scale });
     }
 };
@@ -30,7 +30,7 @@ public:
 int main() {
     try {
         my_cuda_context ctx;
-        ch::gpu_allocator<float> gpu;
+        gpu::allocator<float> gpu;
         std::allocator<float> cpu;
 
         const int N = 10000;
