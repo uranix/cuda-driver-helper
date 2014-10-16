@@ -53,7 +53,7 @@ public:
         CUresult err = cuModuleLoad(&mod, file);
         if (err != CUDA_SUCCESS)
             throw cuda_error(std::string("Loading module `") + file + "' failed", err);
-        modules.push_back(std::pair<std::string, CUmodule>(file, mod));
+        modules.insert(std::pair<std::string, CUmodule>(file, mod));
         return mod;
     }
 
@@ -68,7 +68,7 @@ public:
     ~cuda_context() {
         /* No CUDA_CHECK's due to possible exceptions being thrown */
         for (auto m : modules)
-            cuModuleUnload(m);
+            cuModuleUnload(m.second);
         cuCtxDestroy(ctx);
     }
 };
