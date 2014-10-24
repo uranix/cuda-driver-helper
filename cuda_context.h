@@ -4,6 +4,7 @@
 #include <cuda.h>
 #include "cuda_helper.h"
 
+#include <cstring>
 #include <string>
 #include <map>
 
@@ -47,6 +48,8 @@ public:
         CUDA_CHECK(cuDeviceGet(&dev, devid));
         CUDA_CHECK(cuCtxCreate(&ctx, flags, dev));
     }
+    cuda_context(const cuda_context &) = delete;
+    cuda_context(cuda_context &&) = delete;
 
     CUmodule load_module(const char *file) {
         CUmodule mod;
@@ -65,11 +68,20 @@ public:
         CUDA_CHECK(cuMemcpyHtoD((CUdeviceptr)dst, src, bytes));
     }
 
+    void memcpy_DtoD(void *dst, const void *src, size_t bytes) {
+        CUDA_CHECK(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, bytes));
+    }
+
+    void memcpy_HtoH(void *dst, const void *src, size_t bytes) {
+        memcpy(dst, src, bytes);
+    }
+
     ~cuda_context() {
         /* No CUDA_CHECK's due to possible exceptions being thrown */
         for (auto m : modules)
             cuModuleUnload(m.second);
-        cuCtxDestroy(ctx);
+        if (ctx)
+            cuCtxDestroy(ctx);
     }
 };
 
@@ -85,20 +97,23 @@ public:
     { }
 
     class param_holder {
-        void *_data[64]; /* Lives on stack, not heap */
+        const void *_data[64]; /* Lives on stack, not heap */
     public:
-        param_holder(std::initializer_list<void *> init) {
+        param_holder(std::initializer_list<const void *> init) {
             if (init.size() > 64)
                 throw std::out_of_range("Number of parameters is too big for a kernel function");
             std::copy(init.begin(), init.end(), _data);
         }
-        void **data() {
+        const void **data() {
             return _data;
         }
     };
 
     void operator()(param_holder params) const {
-        CUDA_CHECK(cuLaunchKernel(f, grid.x, grid.y, grid.z, block.x, block.y, block.z, shmem, stream, params.data(), 0));
+        CUDA_CHECK(cuLaunchKernel(f,
+                    grid.x, grid.y, grid.z,
+                    block.x, block.y, block.z,
+                    shmem, stream, const_cast<void **>(params.data()), 0));
     }
 };
 
