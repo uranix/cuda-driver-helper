@@ -60,9 +60,9 @@ const char *cuErrorString(CUresult err) {
         CASE(CUDA_ERROR_NOT_PERMITTED                 );
         CASE(CUDA_ERROR_NOT_SUPPORTED                 );
         CASE(CUDA_ERROR_UNKNOWN                       );
+        default: return "<unknown result code>";
     };
 #undef CASE
-    return "<unknown result code>";
 }
 
 class cuda_error : public std::runtime_error {
